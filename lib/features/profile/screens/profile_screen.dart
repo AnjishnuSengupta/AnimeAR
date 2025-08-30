@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_provider.dart';
+import '../providers/profile_provider.dart';
 import '../../../core/constants/app_constants.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -11,12 +12,53 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(userProvider);
+    final authUser = ref.watch(authStateProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: userAsync.when(
-        data: (user) => _buildProfileContent(context, ref, user, theme),
+      body: authUser.when(
+        data: (user) {
+          if (user == null) {
+            return const Center(child: Text('No authenticated user'));
+          }
+
+          return userProfileAsync.when(
+            data: (userProfile) =>
+                _buildProfileContent(context, ref, user, userProfile, theme),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading profile',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    error.toString(),
+                    style: theme.textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.invalidate(userProfileProvider);
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
@@ -28,7 +70,7 @@ class ProfileScreen extends ConsumerWidget {
                 color: theme.colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text('Error loading profile', style: theme.textTheme.titleLarge),
+              Text('Authentication error', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
@@ -45,22 +87,30 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildProfileContent(
     BuildContext context,
     WidgetRef ref,
-    dynamic user,
+    dynamic authUser,
+    dynamic userProfile,
     ThemeData theme,
   ) {
     return CustomScrollView(
       slivers: [
-        _buildSliverAppBar(context, theme, user),
+        _buildSliverAppBar(context, theme, authUser, userProfile),
         SliverPadding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.defaultPadding,
+            AppConstants.defaultPadding,
+            AppConstants.defaultPadding,
+            AppConstants.defaultPadding +
+                8, // Extra bottom padding to prevent overflow
+          ),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _buildUserInfoCard(
                 theme,
-                user,
+                authUser,
+                userProfile,
               ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
               const SizedBox(height: 20),
-              _buildStatsSection(theme)
+              _buildStatsSection(theme, userProfile)
                   .animate(delay: 200.ms)
                   .fadeIn(duration: 600.ms)
                   .slideY(begin: 0.3, end: 0),
@@ -80,10 +130,11 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildSliverAppBar(
     BuildContext context,
     ThemeData theme,
-    dynamic user,
+    dynamic authUser,
+    dynamic userProfile,
   ) {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 190, // Reduced from 200 to prevent overflow
       floating: false,
       pinned: true,
       backgroundColor: theme.colorScheme.surface,
@@ -101,23 +152,37 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 40),
-                _buildProfileAvatar(user, theme),
-                const SizedBox(height: 16),
-                Text(
-                  user?.name ?? 'User',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ).animate().fadeIn(delay: 300.ms).slideY(begin: 1, end: 0),
-                const SizedBox(height: 4),
-                Text(
-                  user?.email ?? 'user@example.com',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ).animate().fadeIn(delay: 500.ms).slideY(begin: 1, end: 0),
+                const SizedBox(height: 30), // Reduced from 40
+                _buildProfileAvatar(authUser, userProfile, theme),
+                const SizedBox(height: 12), // Reduced from 16
+                Flexible(
+                  // Added Flexible to prevent overflow
+                  child: Text(
+                    userProfile?.displayName ??
+                        authUser?.displayName ??
+                        authUser?.email?.split('@')[0] ??
+                        'User',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ).animate().fadeIn(delay: 300.ms).slideY(begin: 1, end: 0),
+                ),
+                const SizedBox(height: 2), // Reduced from 4
+                Flexible(
+                  // Added Flexible to prevent overflow
+                  child: Text(
+                    userProfile?.email ?? authUser?.email ?? 'user@example.com',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ).animate().fadeIn(delay: 500.ms).slideY(begin: 1, end: 0),
+                ),
+                const SizedBox(height: 8), // Added bottom padding
               ],
             ),
           ),
@@ -126,7 +191,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileAvatar(dynamic user, ThemeData theme) {
+  Widget _buildProfileAvatar(
+    dynamic authUser,
+    dynamic userProfile,
+    ThemeData theme,
+  ) {
     return Hero(
       tag: 'profile_avatar',
       child: Container(
@@ -148,9 +217,9 @@ class ProfileScreen extends ConsumerWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(50),
-          child: user?.photoUrl != null
+          child: (userProfile?.photoURL ?? authUser?.photoURL) != null
               ? Image.network(
-                  user!.photoUrl!,
+                  userProfile?.photoURL ?? authUser?.photoURL ?? '',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
                       _buildDefaultAvatar(theme),
@@ -178,7 +247,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildUserInfoCard(ThemeData theme, dynamic user) {
+  Widget _buildUserInfoCard(
+    ThemeData theme,
+    dynamic authUser,
+    dynamic userProfile,
+  ) {
     return Card(
       elevation: 8,
       shadowColor: theme.colorScheme.primary.withValues(alpha: 0.2),
@@ -209,28 +282,31 @@ class ProfileScreen extends ConsumerWidget {
               theme,
               Icons.person_outline,
               'Full Name',
-              user?.name ?? 'Not provided',
+              userProfile?.displayName ??
+                  authUser?.displayName ??
+                  authUser?.email?.split('@')[0] ??
+                  'Not provided',
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
               theme,
               Icons.email_outlined,
               'Email Address',
-              user?.email ?? 'Not provided',
+              userProfile?.email ?? authUser?.email ?? 'Not provided',
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
               theme,
               Icons.access_time,
               'Member Since',
-              _formatDate(user?.createdAt),
+              _formatDate(userProfile?.createdAt),
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
               theme,
               Icons.login,
               'Last Login',
-              _formatDate(user?.lastLoginAt),
+              _formatDate(userProfile?.lastSignIn),
             ),
           ],
         ),
@@ -278,7 +354,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsSection(ThemeData theme) {
+  Widget _buildStatsSection(ThemeData theme, dynamic userProfile) {
     return Card(
       elevation: 8,
       shadowColor: theme.colorScheme.secondary.withValues(alpha: 0.2),
@@ -311,8 +387,8 @@ class ProfileScreen extends ConsumerWidget {
                   child: _buildStatCard(
                     theme,
                     Icons.camera_alt,
-                    'Characters\nScanned',
-                    '0',
+                    'AR Sessions\nCompleted',
+                    '${userProfile?.arSessionsCount ?? 0}',
                     theme.colorScheme.primary,
                   ),
                 ),
@@ -322,7 +398,7 @@ class ProfileScreen extends ConsumerWidget {
                     theme,
                     Icons.favorite,
                     'Favorites\nSaved',
-                    '0',
+                    '${userProfile?.favoriteCharacters?.length ?? 0}',
                     theme.colorScheme.error,
                   ),
                 ),
@@ -335,8 +411,8 @@ class ProfileScreen extends ConsumerWidget {
                   child: _buildStatCard(
                     theme,
                     Icons.share,
-                    'Discoveries\nShared',
-                    '0',
+                    'Discoveries\nFound',
+                    '${userProfile?.discoveredLocationsCount ?? 0}',
                     theme.colorScheme.tertiary,
                   ),
                 ),

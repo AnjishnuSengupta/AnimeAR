@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../profile/providers/profile_provider.dart';
 import '../widgets/character_card.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/stats_overview.dart';
@@ -14,7 +15,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider);
+    final userProfile = ref.watch(userProfileProvider);
+    final authUser = ref.watch(authStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,7 +31,8 @@ class HomeScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           // Refresh user data and recommendations
-          ref.invalidate(userProvider);
+          ref.invalidate(userProfileProvider);
+          ref.invalidate(authStateProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -37,9 +40,9 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildWelcomeSection(context, user),
+              _buildWelcomeSection(context, userProfile, authUser),
               const SizedBox(height: 24),
-              _buildStatsSection(user),
+              _buildStatsSection(userProfile),
               const SizedBox(height: 24),
               _buildFeaturesSection(context),
               const SizedBox(height: 24),
@@ -53,10 +56,18 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context, AsyncValue user) {
-    return user.when(
-      data: (userData) {
-        final userName = userData?.name ?? 'Explorer';
+  Widget _buildWelcomeSection(
+    BuildContext context,
+    AsyncValue userProfile,
+    AsyncValue authUser,
+  ) {
+    return userProfile.when(
+      data: (profileData) {
+        final userName =
+            profileData?.displayName ??
+            (authUser.value?.displayName) ??
+            (authUser.value?.email?.split('@')[0]) ??
+            'Explorer';
         return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -97,14 +108,14 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsSection(AsyncValue user) {
-    return user.when(
-      data: (userData) =>
+  Widget _buildStatsSection(AsyncValue userProfile) {
+    return userProfile.when(
+      data: (profileData) =>
           StatsOverview(
-                level: userData?.level ?? 1,
-                experiencePoints: userData?.experiencePoints ?? 0,
-                discoveredCount: userData?.discoveredCharacters.length ?? 0,
-                favoritesCount: userData?.favoriteCharacters.length ?? 0,
+                level: 1, // Default level for now
+                experiencePoints: 0, // Default XP for now
+                discoveredCount: profileData?.discoveredLocationsCount ?? 0,
+                favoritesCount: profileData?.favoriteCharacters.length ?? 0,
               )
               .animate(delay: 200.ms)
               .fadeIn(duration: AppConstants.mediumAnimation)
@@ -144,6 +155,21 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => context.push(AppConstants.collectionRoute),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FeatureCard(
+                    icon: Icons.engineering,
+                    title: 'Camera Test',
+                    subtitle: 'Test Camera Setup',
+                    onTap: () => context.push('/camera-test'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(child: SizedBox()), // Placeholder for balance
               ],
             ),
           ],

@@ -1,10 +1,13 @@
 import 'package:go_router/go_router.dart';
+import '../core/constants/app_constants.dart';
 import '../core/widgets/splash_screen.dart';
 import '../core/widgets/auth_wrapper.dart';
+import '../core/widgets/app_startup_widget.dart';
 import '../features/auth/screens/auth_screen.dart';
 import '../core/widgets/main_navigation.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/ar/screens/ar_camera_screen.dart';
+import '../features/ar/screens/camera_test_screen.dart';
 import '../features/social/screens/social_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/profile/screens/settings_screen.dart';
@@ -13,16 +16,19 @@ import '../features/home/screens/character_detail_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
-    initialLocation: '/home',
+    initialLocation: AppConstants.splashRoute,
     routes: [
-      // Splash screen
+      // Splash/startup route - handles initial app startup logic
       GoRoute(
-        path: '/splash',
-        builder: (context, state) => const SplashScreen(),
+        path: AppConstants.splashRoute,
+        builder: (context, state) => const AppStartupWidget(),
       ),
 
       // Auth screen (no auth wrapper needed)
-      GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
+      GoRoute(
+        path: AppConstants.authRoute,
+        builder: (context, state) => const AuthScreen(),
+      ),
 
       // Main navigation with shell route and auth wrapper
       ShellRoute(
@@ -30,19 +36,19 @@ class AppRouter {
             AuthWrapper(child: MainNavigation(child: child)),
         routes: [
           GoRoute(
-            path: '/home',
+            path: AppConstants.homeRoute,
             builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
-            path: '/ar',
+            path: AppConstants.arCameraRoute,
             builder: (context, state) => const ARCameraScreen(),
           ),
           GoRoute(
-            path: '/social',
+            path: AppConstants.socialRoute,
             builder: (context, state) => const SocialScreen(),
           ),
           GoRoute(
-            path: '/profile',
+            path: AppConstants.profileRoute,
             builder: (context, state) => const ProfileScreen(),
           ),
         ],
@@ -50,22 +56,28 @@ class AppRouter {
 
       // Additional screens with auth wrapper
       GoRoute(
-        path: '/settings',
+        path: AppConstants.settingsRoute,
         builder: (context, state) => AuthWrapper(child: const SettingsScreen()),
       ),
       GoRoute(
-        path: '/collection',
+        path: AppConstants.collectionRoute,
         builder: (context, state) =>
             AuthWrapper(child: const CollectionScreen()),
       ),
       GoRoute(
-        path: '/character/:id',
+        path: '${AppConstants.characterDetailRoute}/:id',
         builder: (context, state) {
           final characterId = state.pathParameters['id']!;
           return AuthWrapper(
             child: CharacterDetailScreen(characterId: characterId),
           );
         },
+      ),
+
+      // Camera test screen (for development and testing)
+      GoRoute(
+        path: '/camera-test',
+        builder: (context, state) => const CameraTestScreen(),
       ),
     ],
   );

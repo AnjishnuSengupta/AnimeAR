@@ -2,110 +2,116 @@
 
 ## 🎯 Project Overview
 
-AnimeAR is a comprehensive Flutter application that combines Augmented Reality (AR) technology with anime character recognition. The app uses camera feed to identify anime characters in real-time and overlays interactive information, creating an immersive experience for anime enthusiasts.
+AnimeAR is a comprehensive Flutter application that combines Augmented Reality (AR) technology with anime character recognition. The app uses real camera feed to identify anime characters in real-time and provides an immersive AR experience for anime enthusiasts.
 
 ## ✨ Key Features
 
-### 🔍 AR Character Recognition
-- Real-time camera feed with AR overlay
-- Anime character detection using TensorFlow Lite
+### 📱 **In-App Camera System**
+- **Real-time camera preview** within the app (no external camera redirection)
+- **Permission management** for camera, location, notifications, and storage
+- **First-launch onboarding** with beautiful permission request screen
+- **Multiple camera support** (front/back switching)
+- **Flash controls** with auto/on/off/torch modes
+- **Camera testing utilities** for debugging and verification
+
+### 🔍 **AR Character Recognition**
+- Live camera feed with AR overlay capabilities
+- Anime character detection framework (ready for ML integration)
 - Interactive character information display
-- Confidence-based detection results
+- Confidence-based detection results with bounding boxes
 
-### 🔐 Authentication System
-- Firebase Authentication integration
-- Email/password and Google Sign-in
-- Secure user profile management
-- Firestore user data storage
+### 🔐 **Authentication & User Management**
+- Firebase Authentication with Google Sign-in
+- Automatic user profile creation and management
+- Real-time profile synchronization
+- Secure data storage with Firestore
 
-### 🏠 Interactive Dashboard
-- Welcome section with user personalization
-- Statistics overview (scanned characters, achievements, etc.)
-- Feature cards for quick navigation
-- Character recommendations and collection display
+### 🏠 **Interactive Dashboard**
+- Personalized welcome section with dynamic usernames
+- Real-time statistics (scanned characters, achievements)
+- Quick access feature cards
+- Recent discoveries and character collection
 
-### 🎨 Modern UI/UX
-- Material Design 3 dark theme
-- Gradient-based color scheme
-- Smooth animations with flutter_animate
-- Responsive design for various screen sizes
+### 🎨 **Modern UI/UX**
+- **Beautiful gradient theme** with purple/cyane color scheme
+- Material Design 3 with dark theme
+- Smooth animations and transitions
+- Responsive design for all screen sizes
+- Fixed overflow issues and optimized layouts
 
-### 🧭 Navigation
-- Bottom navigation with 4 main tabs
-- Shell route architecture with go_router
-- Seamless navigation flow
+### 🔧 **Developer Features**
+- **Camera Test Screen** for debugging camera functionality
+- Real-time permission status monitoring
+- Comprehensive error handling and recovery
+- Debug logging and state management
 
-## 🏗️ Architecture
+## 🏗️ **Technical Architecture**
 
-### 📁 Project Structure
+### 📁 **Project Structure**
 ```
 lib/
 ├── core/
-│   ├── constants/
-│   ├── theme/
-│   ├── utils/
-│   └── widgets/
+│   ├── services/          # Camera, Permission services
+│   ├── providers/         # Global state management
+│   ├── widgets/           # App startup, navigation
+│   └── theme/            # Design system
 ├── features/
-│   ├── ar/
-│   ├── auth/
-│   ├── home/
-│   ├── profile/
-│   └── social/
-└── routes/
+│   ├── ar/               # Camera and AR functionality
+│   ├── auth/             # Authentication system
+│   ├── home/             # Dashboard and main screens
+│   ├── profile/          # User profile management
+│   ├── permissions/      # Permission onboarding
+│   └── social/           # Social features
+└── routes/               # Navigation configuration
 ```
 
-### 🛠️ Technology Stack
+### 🛠️ **Technology Stack**
 - **Framework**: Flutter (Latest)
-- **State Management**: flutter_riverpod
-- **Navigation**: go_router
+- **State Management**: flutter_riverpod 2.4.5
+- **Navigation**: go_router 16.2.0
 - **Backend**: Firebase (Auth, Firestore, Storage)
-- **AR**: ar_flutter_plugin + camera
-- **ML**: tflite_flutter
-- **Local Storage**: sqflite
-- **Animations**: flutter_animate
+- **Camera**: Native camera plugin with permission_handler
+- **Local Storage**: sqflite + shared_preferences
+- **Animations**: flutter_animate 4.2.0
 
-### 📱 Core Dependencies
+### 📱 **Core Dependencies**
 ```yaml
 dependencies:
+  # State & Navigation
   flutter_riverpod: ^2.4.5
-  go_router: ^10.1.2
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  ar_flutter_plugin: ^0.7.3
-  camera: ^0.10.5
-  tflite_flutter: ^0.10.4
-  flutter_animate: ^4.2.0
-  permission_handler: ^10.4.5
+  go_router: ^16.2.0
+  
+  # Firebase
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.1
+  cloud_firestore: ^6.0.0
+  google_sign_in: ^6.2.0
+  
+  # Camera & Permissions
+  camera: ^0.11.2
+  permission_handler: ^11.0.1
+  
+  # Storage & Utilities
+  sqflite: ^2.3.0
+  shared_preferences: ^2.2.2
+  
+  # ML & Image Processing
+  tflite_flutter: ^0.11.0
+  image: ^4.1.3
 ```
 
-## 🎨 Design System
+## 🚀 **Getting Started**
 
-### 🌈 Color Palette
-- **Primary**: Deep Purple (#6366F1) with gradients
-- **Secondary**: Pink Accent (#EC4899)
-- **Background**: Dark theme with surface variations
-- **Accent**: Emerald (#10B981) for success states
-
-### 🎯 UI Components
-- `CustomTextField`: Styled input fields with validation
-- `LoadingButton`: Interactive buttons with loading states
-- `CharacterCard`: Display character information
-- `FeatureCard`: Navigation cards with gradients
-- `StatsOverview`: Dashboard statistics display
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Flutter SDK (Latest stable)
+### **Prerequisites**
+- Flutter SDK 3.9.0+
 - Android Studio / VS Code
 - Firebase project setup
-- Android SDK with accepted licenses
+- Physical device for camera testing
 
-### Setup Instructions
+### **Installation**
 1. **Clone the repository**
    ```bash
-   git clone [repository-url]
+   git clone https://github.com/AnjishnuSengupta/AnimeAR.git
    cd AnimeAR
    ```
 
@@ -114,110 +120,111 @@ dependencies:
    flutter pub get
    ```
 
-3. **Firebase Configuration**
+3. **Set up Firebase**
    - Create a Firebase project
-   - Add Android/iOS apps to the project
-   - Download and place configuration files:
-     - `android/app/google-services.json`
-     - `ios/Runner/GoogleService-Info.plist`
+   - Add Android/iOS configuration files
+   - Enable Authentication and Firestore
+   - Or run the setup_firebase.sh script for quick startup
 
 4. **Run the app**
    ```bash
-   flutter run
+   flutter run --debug
    ```
 
-### Testing
+## 🎯 **App Flow**
+
+### **First Launch**
+1. **Permission Onboarding**: Beautiful screen requesting essential permissions
+2. **Camera Permission**: Required for core AR functionality
+3. **Optional Permissions**: Location, notifications, storage for enhanced features
+
+### **Main Features**
+1. **Home Dashboard**: User stats, recent discoveries, feature access
+2. **AR Camera**: Live camera with character recognition
+3. **Camera Test**: Developer tool for testing camera functionality
+4. **Profile**: User management and settings
+
+### **Navigation**
+- **Bottom Navigation**: Home, AR Camera, Social, Profile
+- **Quick Access**: Camera Test button on home screen
+- **Error Recovery**: "Go to Home" buttons on error screens
+
+## 🎨 **Design System**
+
+### 🌈 **Color Palette**
+- **Primary**: Purple (#6C5CE7) - Modern gradient primary
+- **Secondary**: Cyan (#00CEC9) - Accent and highlights  
+- **Background**: Dark (#0D0E1B) - Premium dark theme
+- **Surface**: Navy (#1A1B2E) - Card and surface colors
+
+### 📱 **Key UI Components**
+- **PermissionScreen**: Animated onboarding with permission cards
+- **FeatureCard**: Gradient-based navigation cards
+- **CameraPreview**: Real-time camera display with controls
+- **AROverlay**: Detection results and interactive elements
+
+## 🔒 **Permissions System**
+
+### **Required Permissions**
+- **Camera**: Essential for AR character recognition
+- **Location**: Optional for location-based recommendations
+- **Notifications**: Optional for app updates and discoveries
+- **Storage**: Optional for saving character images
+
+### **Permission Flow**
+1. **Check Status**: Verify current permission state
+2. **Request Dialog**: Show permission rationale
+3. **Handle Denial**: Guide users to settings if needed
+4. **Persistent Storage**: Remember permission choices
+
+## 🧪 **Testing & Debugging**
+
+### **Camera Test Screen**
+- Access via "Camera Test" button on home screen
+- Real-time permission status display
+- Camera initialization debugging
+- Multiple camera detection
+- Error handling verification
+
+### **Debug Features**
+- Console logging for all major operations
+- Error boundaries with recovery options
+- State management debugging
+- Permission status monitoring
+
+## 🚀 **Deployment**
+
+### **Build for Release**
 ```bash
-flutter test
-flutter analyze
+# Android APK
+flutter build apk --release
+
+# Android Bundle
+flutter build appbundle --release
 ```
 
-## 📋 Development Status
+### **Firebase Setup**
+1. Configure authentication providers
+2. Set up Firestore security rules
+3. Configure storage bucket permissions
 
-### ✅ Completed Features
-- [x] Project setup and architecture
-- [x] Firebase authentication system
-- [x] Home dashboard with statistics
-- [x] AR camera interface (basic implementation)
-- [x] Navigation system
-- [x] Custom UI components
-- [x] Theme and styling
-- [x] Test suite
+## 🤝 **Contributing**
 
-### 🔄 In Progress
-- [ ] TensorFlow Lite model integration
-- [ ] Character database expansion
-- [ ] Social features implementation
+1. Fork the repository
+2. Create a feature branch
+3. Implement your changes
+4. Test thoroughly (especially camera functionality)
+5. Submit a pull request
 
-### 📈 Future Enhancements
-- [ ] Offline character database
-- [ ] Social sharing capabilities
-- [ ] Achievement system
-- [ ] Custom AR filters
-- [ ] Character collection game mechanics
+## � **License**
 
-## 🐛 Known Issues
+This project is licensed under the MIT License. See LICENSE file for details.
 
-### Build Issues
-- **Android SDK Licenses**: Some environments may require accepting Android SDK licenses
-  ```bash
-  flutter doctor --android-licenses
-  ```
+## 🆘 **Support**
 
-### Dependencies
-- **Font Assets**: Custom Inter font currently commented out (fallback to system fonts)
-- **Deprecated APIs**: Flutter framework deprecation warnings (info level, non-blocking)
+For issues, questions, or contributions:
+- Create an issue on GitHub
+- Check the camera test screen for debugging
+- Verify permissions are properly granted
 
-## 🔧 Troubleshooting
-
-### Common Issues
-1. **Permission Errors**: Ensure camera permissions are granted
-2. **Firebase Errors**: Verify configuration files are correctly placed
-3. **Build Failures**: Check Flutter doctor and Android SDK setup
-
-### Debug Commands
-```bash
-flutter doctor -v
-flutter clean && flutter pub get
-flutter analyze
-```
-
-## 📱 Supported Platforms
-- ✅ Android (Primary target)
-- ✅ iOS (Compatible)
-- ✅ Linux (Development/testing)
-- ⚠️ Web (Limited AR functionality)
-
-## 👥 Contributing
-
-This project follows modern Flutter development practices:
-- Feature-based architecture
-- Provider pattern for state management
-- Comprehensive error handling
-- Extensive documentation
-
-## 📄 License
-
-This project is developed as a demonstration of Flutter AR capabilities and modern app architecture.
-
----
-
-## 🎯 Quick Start Commands
-
-```bash
-# Development
-flutter run --debug
-
-# Testing
-flutter test
-
-# Analysis
-flutter analyze
-
-# Build (Android)
-flutter build apk --debug
-```
-
-**Status**: ✅ Project successfully created and validated
-**Tests**: ✅ All tests passing
-**Architecture**: ✅ Production-ready structure implemented
+**AnimeAR** - Bringing anime characters to life through AR technology! 🎌✨

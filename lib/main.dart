@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
-import 'routes/app_router.dart';
 import 'core/constants/app_constants.dart';
 import 'core/widgets/splash_screen.dart';
 import 'core/config/firebase_config.dart';
 import 'features/ar/services/anime_api_service.dart';
+import 'routes/app_router.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -48,9 +48,17 @@ class AnimeARApp extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error, size: 64, color: Colors.red),
+                    const Icon(Icons.error, color: Colors.red, size: 64),
                     const SizedBox(height: 16),
                     Text('Initialization Error: ${snapshot.error}'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Restart the app
+                        main();
+                      },
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
@@ -89,8 +97,13 @@ class AnimeARApp extends StatelessWidget {
 
       // Initialize cameras
       debugPrint('Main: Initializing cameras');
-      cameras = await availableCameras();
-      debugPrint('Main: Found ${cameras.length} cameras');
+      try {
+        cameras = await availableCameras();
+        debugPrint('Main: Found ${cameras.length} cameras');
+      } catch (e) {
+        debugPrint('Main: Error initializing cameras: $e');
+        cameras = [];
+      }
 
       debugPrint('Main: App initialization completed successfully');
     } catch (e) {

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
@@ -22,9 +23,17 @@ class AuthService {
 
   Stream<User?> get authStateChanges async* {
     try {
+      debugPrint('AuthService: Setting up auth state changes stream');
+      // Check if Firebase is initialized
+      if (Firebase.apps.isEmpty) {
+        debugPrint('AuthService: Firebase not initialized, yielding null');
+        yield null;
+        return;
+      }
       // Firebase should already be initialized by main.dart
       yield* auth.authStateChanges();
     } catch (e) {
+      debugPrint('AuthService: Error in auth state changes: $e');
       yield null;
     }
   }
@@ -88,6 +97,7 @@ class AuthService {
 
         debugPrint('AuthService: Creating user document in Firestore');
         await _createUserDocument(user);
+
         debugPrint('AuthService: Sign up completed successfully');
       }
 
@@ -177,6 +187,7 @@ class AuthService {
         );
 
         await _createUserDocument(user);
+
         debugPrint('AuthService: Google Sign-In completed successfully');
       }
 

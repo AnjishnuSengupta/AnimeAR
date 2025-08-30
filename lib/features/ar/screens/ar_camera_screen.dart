@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:permission_handler/permission_handler.dart'; // Temporarily disabled
+import 'package:camera/camera.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/services/permission_service.dart';
 import '../providers/ar_camera_provider.dart';
 import '../widgets/ar_overlay.dart';
 import '../widgets/detection_result_card.dart';
@@ -14,26 +16,184 @@ class ARCameraScreen extends ConsumerStatefulWidget {
 }
 
 class _ARCameraScreenState extends ConsumerState<ARCameraScreen> {
+  CameraController? _cameraController;
   bool _isCameraInitialized = false;
   bool _hasPermission = false;
+  bool _isLoading = false;
+  FlashMode _flashMode = FlashMode.auto;
+  List<CameraDescription> _cameras = [];
+  int _selectedCameraIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _checkPermissions();
+    _initializeCamera();
   }
 
-  Future<void> _checkPermissions() async {
-    // Simplified permission handling - assumes permissions are granted
-    // In a production app, you would handle camera permissions here
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeCamera() async {
     setState(() {
-      _hasPermission = true;
-      _isCameraInitialized = true;
+      _isLoading = true;
     });
 
-    // Simulate detection for demo
-    if (_hasPermission) {
-      _simulateDetection();
+    try {
+      // Check camera permission
+      final hasPermission = await PermissionService.isPermissionGranted(
+        AppPermission.camera,
+      );
+
+      if (!hasPermission) {
+        // Request permission
+        final granted = await PermissionService.handlePermissionRequest(
+          context,
+          AppPermission.camera,
+        );
+
+        if (!granted) {
+          setState(() {
+            _hasPermission = false;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+
+      setState(() {
+        _hasPermission = true;
+      });
+
+      // Get available cameras
+      _cameras = await availableCameras();
+      if (_cameras.isEmpty) {
+        throw Exception('No cameras available on this device');
+      }
+
+      // Initialize camera controller
+      _cameraController = CameraController(
+        _cameras[_selectedCameraIndex],
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+          _isLoading = false;
+        });
+
+        // Simulate detection for demo
+        _simulateDetection();
+      }
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+      if (mounted) {
+        setState(() {
+          _hasPermission = false;
+          _isCameraInitialized = false;
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Camera error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Go Home',
+              onPressed: () => context.go('/home'),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _switchCamera() async {
+    if (_cameras.length < 2) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _cameraController?.dispose();
+
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
+
+      _cameraController = CameraController(
+        _cameras[_selectedCameraIndex],
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error switching camera: $e');
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to switch camera: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleFlash() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      switch (_flashMode) {
+        case FlashMode.off:
+          _flashMode = FlashMode.auto;
+          break;
+        case FlashMode.auto:
+          _flashMode = FlashMode.always;
+          break;
+        case FlashMode.always:
+          _flashMode = FlashMode.torch;
+          break;
+        case FlashMode.torch:
+          _flashMode = FlashMode.off;
+          break;
+      }
+
+      await _cameraController!.setFlashMode(_flashMode);
+      setState(() {});
+    } catch (e) {
+      debugPrint('Error toggling flash: $e');
+    }
+  }
+
+  IconData _getFlashIconData() {
+    switch (_flashMode) {
+      case FlashMode.off:
+        return Icons.flash_off;
+      case FlashMode.auto:
+        return Icons.flash_auto;
+      case FlashMode.always:
+        return Icons.flash_on;
+      case FlashMode.torch:
+        return Icons.highlight;
     }
   }
 
@@ -61,11 +221,12 @@ class _ARCameraScreenState extends ConsumerState<ARCameraScreen> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(icon: const Icon(Icons.flash_auto), onPressed: () {}),
-          IconButton(
-            icon: const Icon(Icons.flip_camera_android),
-            onPressed: () {},
-          ),
+          IconButton(icon: Icon(_getFlashIconData()), onPressed: _toggleFlash),
+          if (_cameras.length > 1)
+            IconButton(
+              icon: const Icon(Icons.flip_camera_android),
+              onPressed: _switchCamera,
+            ),
         ],
       ),
       body: Stack(
@@ -97,8 +258,16 @@ class _ARCameraScreenState extends ConsumerState<ARCameraScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _checkPermissions,
+                onPressed: _initializeCamera,
                 child: const Text('Grant Permission'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.go('/home'),
+                child: const Text(
+                  'Go to Home',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -106,18 +275,26 @@ class _ARCameraScreenState extends ConsumerState<ARCameraScreen> {
       );
     }
 
-    if (!_isCameraInitialized) {
+    if (_isLoading || !_isCameraInitialized || _cameraController == null) {
       return Container(
         color: Colors.black,
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: Colors.white),
-              SizedBox(height: 16),
-              Text(
+              const CircularProgressIndicator(color: Colors.white),
+              const SizedBox(height: 16),
+              const Text(
                 'Initializing camera...',
                 style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => context.go('/home'),
+                child: const Text(
+                  'Go to Home',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -125,27 +302,46 @@ class _ARCameraScreenState extends ConsumerState<ARCameraScreen> {
       );
     }
 
-    // Placeholder camera preview
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.videocam, color: Colors.white, size: 100),
-            SizedBox(height: 16),
-            Text(
-              'Camera Preview',
-              style: TextStyle(color: Colors.white, fontSize: 24),
-            ),
-            Text(
-              '(Demo Mode)',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-          ],
+    // Real camera preview with error boundary
+    try {
+      return ClipRect(
+        child: AspectRatio(
+          aspectRatio: _cameraController!.value.aspectRatio,
+          child: CameraPreview(_cameraController!),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, color: Colors.red, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                'Camera Error: ${e.toString()}',
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _initializeCamera,
+                child: const Text('Retry'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.go('/home'),
+                child: const Text(
+                  'Go to Home',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildDetectionResults(List<Map<String, dynamic>> detections) {
